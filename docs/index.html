@@ -571,17 +571,27 @@
       <!-- ── Wenatchee TMAX chart ── -->
       <section data-transition="fade">
         <div style="display:flex;align-items:baseline;gap:1em;flex-wrap:wrap;">
-          <h2 style="margin-bottom:.1em;">Wenatchee, WA — Daily High Temperature (1931–present)</h2>
+          <h2 style="margin-bottom:.1em;">Wenatchee, WA — Yearly High Temperature (1931–present)</h2>
           <button class="game-btn" onclick="downloadCSV('tmax')" style="font-size:.55em;padding:.3em .8em;">⬇ Download CSV</button>
         </div>
         <p style="color:#6b7280;font-size:.6em;margin:0 0 .3em;">NOAA Weather Station USC00459074</p>
         <div id="chart-tmax" style="width:100%;height:72vh;"></div>
       </section>
 
+      <!-- ── Wenatchee TMIN chart ── -->
+      <section data-transition="fade">
+        <div style="display:flex;align-items:baseline;gap:1em;flex-wrap:wrap;">
+          <h2 style="margin-bottom:.1em;">Wenatchee, WA — Yearly Low Temperature (1931–present)</h2>
+          <button class="game-btn" onclick="downloadCSV('tmin')" style="font-size:.55em;padding:.3em .8em;">⬇ Download CSV</button>
+        </div>
+        <p style="color:#6b7280;font-size:.6em;margin:0 0 .3em;">NOAA Weather Station USC00459074</p>
+        <div id="chart-tmin" style="width:100%;height:72vh;"></div>
+      </section>
+
       <!-- ── Wenatchee PRCP chart ── -->
       <section data-transition="fade">
         <div style="display:flex;align-items:baseline;gap:1em;flex-wrap:wrap;">
-          <h2 style="margin-bottom:.1em;">Wenatchee, WA — Daily Precipitation (1931–present)</h2>
+          <h2 style="margin-bottom:.1em;">Wenatchee, WA — Yearly Precipitation (1931–present)</h2>
           <button class="game-btn" onclick="downloadCSV('prcp')" style="font-size:.55em;padding:.3em .8em;">⬇ Download CSV</button>
         </div>
         <p style="color:#6b7280;font-size:.6em;margin:0 0 .3em;">NOAA Weather Station USC00459074</p>
@@ -596,6 +606,18 @@
         </div>
         <p style="color:#6b7280;font-size:.6em;margin:0 0 .3em;">NOAA Weather Station USC00459074</p>
         <div id="chart-snwd" style="width:100%;height:72vh;"></div>
+      </section>
+
+      <section>
+        <h2>What Did You Observe? <span class="interactive-badge">DISCUSS</span></h2>
+        <ul>
+          <li class="fragment">What patterns do you see across the four charts?</li>
+          <li class="fragment">Do any years stand out as unusual?</li>
+          <li class="fragment">How much <strong>spread</strong> is there year to year — are some variables more consistent than others?</li>
+          <li class="fragment">Do you see any <strong>trends</strong> over time — is anything getting higher, lower, or more variable?</li>
+          <li class="fragment">What questions would you want to investigate further?</li>
+          <li class="fragment">What data would you need that we don't have here?</li>
+        </ul>
       </section>
 
     </section>
@@ -645,33 +667,70 @@ Reveal.initialize({
 
   function drawTmax() {
     if (!document.getElementById('chart-tmax') || !window.WENATCHEE_TMAX) return;
+    var yearMax = {};
+    for (var i = 0; i < WENATCHEE_TMAX_DATES.length; i++) {
+      var yr = WENATCHEE_TMAX_DATES[i].slice(0, 4);
+      if (!(yr in yearMax) || WENATCHEE_TMAX[i] > yearMax[yr]) yearMax[yr] = WENATCHEE_TMAX[i];
+    }
+    var years = Object.keys(yearMax).sort().filter(function(y) { return y !== '2026'; });
+    var maxVals = years.map(function(y) { return yearMax[y]; });
     Plotly.newPlot('chart-tmax', [
-      { type: 'scattergl', mode: 'markers', name: 'Daily high',
-        x: WENATCHEE_TMAX_DATES, y: WENATCHEE_TMAX,
-        marker: { color: '#9a2515', size: 3, opacity: 0.3 } }
+      { type: 'scatter', mode: 'markers', name: 'Hottest day',
+        x: years, y: maxVals,
+        marker: { color: '#9a2515', size: 6 } }
     ], {
       paper_bgcolor: '#ffffff', plot_bgcolor: '#f3f4f6',
       font: lightFont,
       margin: { t: 10, r: 20, b: 50, l: 55 },
       showlegend: false,
-      xaxis: { title: 'Date', color: '#131516', gridcolor: '#d1d5db' },
-      yaxis: { title: 'Max Temp (°F)', color: '#131516', gridcolor: '#d1d5db' }
+      xaxis: { title: 'Year', color: '#131516', gridcolor: '#d1d5db' },
+      yaxis: { title: 'Yearly High Temp (°F)', color: '#131516', gridcolor: '#d1d5db' }
+    }, chartConfig);
+  }
+
+  function drawTmin() {
+    if (!document.getElementById('chart-tmin') || !window.WENATCHEE_TMIN) return;
+    var yearMin = {};
+    for (var i = 0; i < WENATCHEE_TMIN_DATES.length; i++) {
+      var yr = WENATCHEE_TMIN_DATES[i].slice(0, 4);
+      if (!(yr in yearMin) || WENATCHEE_TMIN[i] < yearMin[yr]) yearMin[yr] = WENATCHEE_TMIN[i];
+    }
+    var years = Object.keys(yearMin).sort().filter(function(y) { return y !== '2026'; });
+    var minVals = years.map(function(y) { return yearMin[y]; });
+    Plotly.newPlot('chart-tmin', [
+      { type: 'scatter', mode: 'markers', name: 'Coldest day',
+        x: years, y: minVals,
+        marker: { color: '#107895', size: 6 } }
+    ], {
+      paper_bgcolor: '#ffffff', plot_bgcolor: '#f3f4f6',
+      font: lightFont,
+      margin: { t: 10, r: 20, b: 50, l: 55 },
+      showlegend: false,
+      xaxis: { title: 'Year', color: '#131516', gridcolor: '#d1d5db' },
+      yaxis: { title: 'Yearly Low Temp (°F)', color: '#131516', gridcolor: '#d1d5db', zerolinewidth: 1, zerolinecolor: '#d1d5db' }
     }, chartConfig);
   }
 
   function drawPrcp() {
     if (!document.getElementById('chart-prcp') || !window.WENATCHEE_PRCP) return;
+    var yearSum = {};
+    for (var i = 0; i < WENATCHEE_PRCP_DATES.length; i++) {
+      var yr = WENATCHEE_PRCP_DATES[i].slice(0, 4);
+      yearSum[yr] = (yearSum[yr] || 0) + WENATCHEE_PRCP[i];
+    }
+    var years = Object.keys(yearSum).sort().filter(function(y) { return y !== '2026'; });
+    var sumVals = years.map(function(y) { return Math.round(yearSum[y] * 100) / 100; });
     Plotly.newPlot('chart-prcp', [
-      { type: 'scattergl', mode: 'markers', name: 'Daily precip',
-        x: WENATCHEE_PRCP_DATES, y: WENATCHEE_PRCP,
-        marker: { color: '#107895', size: 4, opacity: 0.4 } }
+      { type: 'scatter', mode: 'markers', name: 'Annual precip',
+        x: years, y: sumVals,
+        marker: { color: '#107895', size: 6 } }
     ], {
       paper_bgcolor: '#ffffff', plot_bgcolor: '#f3f4f6',
       font: lightFont,
       margin: { t: 10, r: 20, b: 50, l: 55 },
       showlegend: false,
-      xaxis: { title: 'Date', color: '#131516', gridcolor: '#d1d5db' },
-      yaxis: { title: 'Precipitation (in)', color: '#131516', gridcolor: '#d1d5db' }
+      xaxis: { title: 'Year', color: '#131516', gridcolor: '#d1d5db' },
+      yaxis: { title: 'Total Precipitation (in)', color: '#131516', gridcolor: '#d1d5db' }
     }, chartConfig);
   }
 
@@ -701,6 +760,7 @@ Reveal.initialize({
 
   Reveal.on('slidechanged', function(e) {
     if (e.currentSlide.querySelector('#chart-tmax')) drawTmax();
+    if (e.currentSlide.querySelector('#chart-tmin')) drawTmin();
     if (e.currentSlide.querySelector('#chart-prcp')) drawPrcp();
     if (e.currentSlide.querySelector('#chart-snwd')) drawSnwd();
   });
@@ -714,6 +774,9 @@ function downloadCSV(type) {
   if (type === 'tmax') {
     dates = WENATCHEE_TMAX_DATES; vals = WENATCHEE_TMAX;
     header = 'date,tmax_f'; filename = 'wenatchee_tmax.csv';
+  } else if (type === 'tmin') {
+    dates = WENATCHEE_TMIN_DATES; vals = WENATCHEE_TMIN;
+    header = 'date,tmin_f'; filename = 'wenatchee_tmin.csv';
   } else if (type === 'prcp') {
     dates = WENATCHEE_PRCP_DATES; vals = WENATCHEE_PRCP;
     header = 'date,prcp_in'; filename = 'wenatchee_prcp.csv';
