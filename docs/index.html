@@ -1,0 +1,1083 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Data: What It Is, What It Can Tell Us, and What It Can't</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/black.css">
+  <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+
+  <style>
+    :root {
+      --r-background-color: #0d1117;
+      --r-main-font-size: 32px;
+      --r-heading-color: #58a6ff;
+      --r-link-color: #79c0ff;
+    }
+    .reveal .slides section { text-align: left; }
+    .reveal h1 { font-size: 1.8em; color: #58a6ff; text-align: center; }
+    .reveal h2 { font-size: 1.25em; color: #3fb950; border-bottom: 2px solid #3fb950; padding-bottom: 0.2em; margin-bottom: 0.6em; }
+    .reveal h3 { font-size: 1em; color: #d2a8ff; }
+    .reveal ul { margin-left: 1em; }
+    .reveal ul li { margin-bottom: 0.35em; }
+    .reveal .section-title { text-align: center; }
+    .reveal .section-title h2 { font-size: 1.6em; border: none; color: #58a6ff; }
+
+    /* ── callout boxes ── */
+    .callout {
+      background: rgba(88,166,255,.1);
+      border-left: 4px solid #58a6ff;
+      padding: .5em .9em;
+      margin: .6em 0;
+      border-radius: 0 6px 6px 0;
+    }
+    .callout.green  { background: rgba(63,185,80,.1);   border-left-color:#3fb950; }
+    .callout.purple { background: rgba(210,168,255,.1); border-left-color:#d2a8ff; }
+    .callout.orange { background: rgba(255,163,72,.1);  border-left-color:#ffa348; }
+
+    /* ── badges ── */
+    .interactive-badge {
+      display: inline-block;
+      background: #ffa348; color: #0d1117;
+      font-size: .45em; font-weight: bold;
+      padding: .15em .5em; border-radius: 20px;
+      vertical-align: middle; margin-left: .4em;
+      letter-spacing: .05em;
+    }
+    .fix-badge {
+      display: inline-block;
+      background: #3fb950; color: #0d1117;
+      font-size: .5em; font-weight: bold;
+      padding: .1em .4em; border-radius: 4px;
+      vertical-align: middle; margin-left: .4em;
+    }
+
+    /* ── two-col grid ── */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2em; }
+
+    /* ── accuracy bar demo ── */
+    .accuracy-row { display:flex; align-items:center; gap:.8em; margin:.4em 0; font-size:.8em; }
+    .accuracy-label { width:90px; text-align:right; color:#8b949e; }
+    .accuracy-bar { height:18px; border-radius:4px; display:inline-block; }
+
+    /* ─────────────────────────────────────────
+       COIN FLIP GAME
+    ───────────────────────────────────────── */
+    #coin-game {
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 10px;
+      padding: 1em 1.2em;
+      max-width: 600px;
+      font-size: .82em;
+    }
+    #coin-history {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      min-height: 36px; margin: .5em 0;
+    }
+    .coin-chip {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: bold; font-size: .85em;
+      animation: pop .2s ease;
+    }
+    .coin-chip.H { background: #ffa348; color: #0d1117; }
+    .coin-chip.T { background: #58a6ff; color: #0d1117; }
+    @keyframes pop { from{transform:scale(.5);opacity:0} to{transform:scale(1);opacity:1} }
+    #coin-streak { color: #ffa348; font-weight: bold; min-height: 1.4em; }
+    #coin-totals { color: #8b949e; font-size: .85em; margin: .3em 0; }
+    #coin-probability { color: #3fb950; font-weight: bold; min-height: 1.4em; font-size:.9em; }
+    .game-btn {
+      background: #21262d; border: 1px solid #30363d;
+      color: #e6edf3; border-radius: 6px;
+      padding: .4em .9em; cursor: pointer; font-size: .9em;
+      transition: background .15s;
+      font-family: inherit;
+    }
+    .game-btn:hover { background: #30363d; }
+    .game-btn.primary { background: #1f6feb; border-color: #1f6feb; }
+    .game-btn.primary:hover { background: #388bfd; }
+    .game-btn.green-btn { background: #238636; border-color: #238636; }
+    .game-btn.green-btn:hover { background: #2ea043; }
+    .game-btn.orange-btn { background: #9e6a03; border-color: #9e6a03; }
+    .game-btn.orange-btn:hover { background: #bb8009; }
+    #coin-auto-result { color: #d2a8ff; margin-top:.5em; font-size:.85em; min-height:1.4em; }
+
+    /* ─────────────────────────────────────────
+       MONTY HALL GAME
+    ───────────────────────────────────────── */
+    #monty-game {
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 10px;
+      padding: .8em 1.2em;
+      font-size: .78em;
+    }
+    .doors-row {
+      display: flex; gap: 1em; margin: .6em 0; justify-content: center;
+    }
+    .door-btn {
+      width: 90px; height: 110px;
+      border-radius: 8px;
+      border: 2px solid #30363d;
+      background: #21262d;
+      color: #e6edf3;
+      cursor: pointer;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      font-size: 2.4em;
+      transition: transform .15s, border-color .2s, background .2s;
+      user-select: none;
+      font-family: inherit;
+    }
+    .door-btn:hover:not(:disabled) { transform: translateY(-4px); border-color: #58a6ff; }
+    .door-btn.selected { border-color: #58a6ff; background: rgba(88,166,255,.15); }
+    .door-btn.revealed { border-color: #ffa348; background: rgba(255,163,72,.12); cursor: default; }
+    .door-btn.winner { border-color: #3fb950; background: rgba(63,185,80,.15); }
+    .door-btn.loser  { border-color: #f85149; background: rgba(248,81,73,.12); }
+    .door-btn:disabled { cursor: default; }
+    .door-label { font-size: .3em; margin-top: .3em; color: #8b949e; }
+    #monty-message { min-height: 1.4em; color: #e6edf3; margin: .4em 0; font-weight: bold; }
+    #monty-prompt  { min-height: 1.2em; color: #8b949e; font-size: .9em; }
+    .monty-btn-row  { display: flex; gap: .6em; flex-wrap: wrap; margin: .4em 0; }
+    .monty-stats {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: .5em; margin-top: .6em;
+    }
+    .stat-card {
+      background: rgba(255,255,255,.05);
+      border-radius: 6px; padding: .4em .6em;
+    }
+    .stat-card .stat-title { color: #8b949e; font-size:.85em; }
+    .stat-card .stat-numbers { font-size: 1.1em; font-weight: bold; }
+    .stat-card.stay-card  .stat-numbers { color: #ffa348; }
+    .stat-card.switch-card .stat-numbers { color: #3fb950; }
+    #monty-insight { color: #d2a8ff; margin-top:.4em; font-size:.85em; min-height:1.2em; }
+
+    /* ─────────────────────────────────────────
+       SPREAD / PLOTLY SLIDE
+    ───────────────────────────────────────── */
+    #spread-container {
+      display: flex; flex-direction: column; gap: .5em;
+      font-size: .78em;
+    }
+    #spread-chart { width: 100%; height: 280px; }
+    #spread-controls {
+      display: flex; align-items: center; gap: .8em; flex-wrap: wrap;
+    }
+    #spread-slider {
+      flex: 1;
+      -webkit-appearance: none;
+      height: 6px; border-radius: 3px;
+      background: linear-gradient(90deg, #3fb950, #ffa348, #f85149);
+      outline: none;
+    }
+    #spread-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px; height: 20px; border-radius: 50%;
+      background: #e6edf3; cursor: pointer;
+    }
+    #spread-label {
+      width: 130px; text-align: right;
+      color: #e6edf3; font-weight: bold;
+    }
+    #spread-stats {
+      display: flex; gap: 1.5em; font-size: .85em;
+    }
+    .spread-stat { color: #8b949e; }
+    .spread-stat span { color: #e6edf3; font-weight: bold; }
+
+    /* misc */
+    .reveal blockquote {
+      background: rgba(255,255,255,.05);
+      border-left: 4px solid #d2a8ff;
+      padding: .4em .8em; font-style: italic; color: #e6edf3;
+    }
+    .overlap-chart { text-align: center; font-size:.7em; color:#8b949e; margin-top:.8em; }
+    .bell-row { display:flex; justify-content:center; gap:0; font-size:2.2em; line-height:1; margin:.3em 0; }
+  </style>
+</head>
+<body>
+<div class="reveal">
+  <div class="slides">
+
+    <!-- ══════════════════════════════════════
+         SLIDE 1 — TITLE
+    ══════════════════════════════════════ -->
+    <section>
+      <h1>Data: What It Is, What It Can Tell Us, and What It Can't</h1>
+      <br>
+      <p style="text-align:center;color:#8b949e;">8th Grade Data Science</p>
+      
+    </section>
+
+    <!-- ══════════════════════════════════════
+         SECTION 1: WHY DO WE NEED DATA?
+    ══════════════════════════════════════ -->
+    <section>
+      <section class="section-title">
+        <h2>Section 1</h2><h2>Why Do We Need Data?</h2>
+        
+      </section>
+
+      <section>
+        <h2>Opening Challenge <span class="interactive-badge">INTERACTIVE</span></h2>
+        <ul>
+          <li class="fragment">"Raise your hand if you listen to music while studying"</li>
+          <li class="fragment">"Raise your hand if you think it helps"</li>
+          <li class="fragment" style="color:#ffa348;font-weight:bold;">"How do you know?"</li>
+        </ul>
+        <div class="callout fragment"><em>We'll return to this question at the end of class.</em></div>
+        
+      </section>
+
+      <section>
+        <h2>The Problem with Gut Feelings</h2>
+        <ul>
+          <li class="fragment">We are <strong>bad</strong> intuitive statisticians</li>
+          <li class="fragment"><strong>The Birthday Problem:</strong> how many people do you need in a room for a 50% chance two share a birthday?</li>
+          <li class="fragment">What's your guess?</li>
+          <li class="fragment">The answer is <strong style="color:#3fb950;">23</strong></li>
+        </ul>
+        <div class="callout fragment">Our brains look for stories, not patterns.</div>
+        
+      </section>
+
+      <section>
+        <h2>What Data Does for Us</h2>
+        <ul>
+          <li class="fragment">Replaces <em>"I think"</em> with <em>"here's what we observed"</em></li>
+          <li class="fragment">Lets us <strong>compare</strong></li>
+          <li class="fragment">Lets us <strong>track change over time</strong></li>
+          <li class="fragment">Lets us <strong>spot things invisible to the naked eye</strong></li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Data Is Everywhere <span class="interactive-badge">INTERACTIVE</span></h2>
+        <p>Everything measurable is potential data: temperature, test scores, heart rate, rainfall, likes on a post</p>
+        <div class="callout green fragment">Name <strong>5 things that were measured about you today</strong></div>
+        
+      </section>
+    </section>
+
+    <!-- ══════════════════════════════════════
+         SECTION 2: WHAT CAN DATA TELL US?
+    ══════════════════════════════════════ -->
+    <section>
+      <section class="section-title">
+        <h2>Section 2</h2><h2>What Can Data Tell Us?</h2>
+      </section>
+
+      <section>
+        <h2>Two Jobs of Data</h2>
+        <div class="two-col">
+          <div class="callout fragment"><strong>🔍 Uncover hidden truths</strong><br>Things happening right now that we can't see with our eyes</div>
+          <div class="callout green fragment"><strong>📈 Forecast</strong><br>Predict what hasn't happened yet</div>
+        </div>
+        <p class="fragment" style="margin-top:.8em;color:#8b949e;">Both depend on the same raw material: <strong style="color:#e6edf3;">careful observation</strong></p>
+      </section>
+
+      <section>
+        <h2>Things Too Big, Too Small, Too Slow, or Too Fast to See</h2>
+        <ul>
+          <li class="fragment"><strong>Too big</strong> — climate change, ocean currents, continental drift</li>
+          <li class="fragment"><strong>Too small</strong> — bacteria, air pollutants, blood chemistry</li>
+          <li class="fragment"><strong>Too slow</strong> — glacier retreat, species extinction, soil erosion</li>
+          <li class="fragment"><strong>Too fast</strong> — lightning, nerve signals, a car crash</li>
+        </ul>
+        <div class="callout fragment">Data makes the invisible visible.<br><small style="color:#8b949e;">The collection method must match the <em>speed</em> of what you're studying.</small></div>
+      </section>
+
+      <section>
+        <h2>What Does a Dataset Actually Tell Us?</h2>
+        <p>When you collect data you get a pile of numbers — how do you summarize it?</p>
+        <div class="two-col" style="margin-top:.8em;">
+          <div class="callout fragment"><strong>Where is the middle?</strong><br><em>central tendency</em></div>
+          <div class="callout green fragment"><strong>How spread out is it?</strong><br><em>variability</em></div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Central Tendency: Finding the Middle</h2>
+        <ul>
+          <li class="fragment"><strong>Mean, median, mode</strong> — three ways to describe "typical"</li>
+          <li class="fragment">They don't always agree — and that <em>disagreement is informative</em></li>
+        </ul>
+        <div class="callout orange fragment">A billionaire walks into a room of average earners.<br><strong>Average income spikes dramatically.</strong> Median barely moves.</div>
+        <p class="fragment" style="color:#ffa348;">The choice of measure matters.</p>
+      </section>
+
+      <!-- ── SLIDE 10: SPREAD — with Plotly interactive ── -->
+      <section>
+        <h2>Spread: How Much Does It Vary? <span class="interactive-badge">INTERACTIVE</span></h2>
+        <div id="spread-container">
+          <div id="spread-chart"></div>
+          <div id="spread-controls" style="flex-direction:column;gap:.4em;">
+            <div style="display:flex;align-items:center;gap:.6em;">
+              <span style="width:130px;color:#58a6ff;font-size:.85em;">📊 Spread (σ)</span>
+              <span style="color:#8b949e;font-size:.75em;white-space:nowrap;">Low</span>
+              <input type="range" id="spread-slider" min="2" max="28" value="5" step="1" style="flex:1;">
+              <span style="color:#8b949e;font-size:.75em;white-space:nowrap;">High</span>
+              <span id="spread-label" style="width:80px;text-align:right;">σ = 5°F</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:.6em;">
+              <span style="width:130px;color:#ffa348;font-size:.85em;">🎯 Mean (center)</span>
+              <span style="color:#8b949e;font-size:.75em;white-space:nowrap;">Cold</span>
+              <input type="range" id="mean-slider" min="40" max="90" value="65" step="1" style="flex:1;background:linear-gradient(90deg,#58a6ff,#ffa348,#f85149);">
+              <span style="color:#8b949e;font-size:.75em;white-space:nowrap;">Hot</span>
+              <span id="mean-label" style="width:80px;text-align:right;">μ = 65°F</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:.6em;">
+              <span style="width:130px;color:#3fb950;font-size:.85em;">📈 Trend (slope)</span>
+              <span style="color:#8b949e;font-size:.75em;white-space:nowrap;">↘ Down</span>
+              <input type="range" id="trend-slider" min="-8" max="8" value="0" step="1" style="flex:1;background:linear-gradient(90deg,#f85149,#21262d,#3fb950);">
+              <span style="color:#8b949e;font-size:.75em;white-space:nowrap;">↗ Up</span>
+              <span id="trend-label" style="width:80px;text-align:right;">slope = 0</span>
+            </div>
+          </div>
+          <div id="spread-stats">
+            <div class="spread-stat">Mean: <span id="stat-mean">—</span></div>
+            <div class="spread-stat">Std dev: <span id="stat-sd">—</span></div>
+            <div class="spread-stat">Min: <span id="stat-min">—</span></div>
+            <div class="spread-stat">Max: <span id="stat-max">—</span></div>
+          </div>
+        </div>
+        
+      </section>
+
+      <section>
+        <h2>Putting It Together</h2>
+        <div class="callout">Any dataset needs <strong>both</strong>:<br>where is the center, and how spread out is it?</div>
+        <ul style="margin-top:.8em;">
+          <li class="fragment">These are the two most basic tools of data description</li>
+          <li class="fragment">Everything else in data science builds on these two ideas</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Correlation as a Clue</h2>
+        <ul>
+          <li class="fragment">When two things move together it suggests a connection worth investigating</li>
+          <li class="fragment"><strong>Example:</strong> ice cream sales and shark attacks both spike in summer</li>
+        </ul>
+        <div class="callout orange fragment" style="margin-top:.8em;">But correlation is just a <strong>clue</strong> — not an answer.</div>
+      </section>
+
+      <section>
+        <h2>The Confounding Variable <span class="interactive-badge">INTERACTIVE</span></h2>
+        <div class="callout green">The real culprit: <strong>hot weather</strong> drives both.<br>This hidden third factor = a <strong>confounding variable</strong></div>
+        <p style="margin-top:.8em;" class="fragment">What's the confounding variable in each of these?</p>
+        <ul class="fragment">
+          <li>Countries with more TV sets have higher life expectancy</li>
+          <li>Kids with bigger feet are better spellers</li>
+          <li>More fire trucks at a fire → more damage</li>
+        </ul>
+        
+      </section>
+
+      <section>
+        <h2>From Clue to Cause</h2>
+        <ul>
+          <li class="fragment">Rule out confounders</li>
+          <li class="fragment">Test mechanisms</li>
+          <li class="fragment">Replicate findings</li>
+        </ul>
+        <div class="callout fragment">Data starts the investigation — it rarely ends it alone.</div>
+      </section>
+
+      <section class="section-title">
+        <h3 style="color:#8b949e;">Section 2, Part B</h3><h2>Forecasting</h2>
+      </section>
+
+      <section>
+        <h2>Predicting What Hasn't Happened Yet</h2>
+        <div class="two-col">
+          <div class="callout"><strong>Uncovering truth</strong><br>looks <em>backward</em> at patterns</div>
+          <div class="callout green"><strong>Forecasting</strong><br>looks <em>forward</em></div>
+        </div>
+        <p class="fragment" style="margin-top:.8em;">Based on:</p>
+        <ul class="fragment"><li>Historical patterns</li><li>Current conditions</li><li>A model of how the system works</li></ul>
+      </section>
+
+      <section>
+        <h2>What Makes a Good Forecast?</h2>
+        <ul>
+          <li class="fragment">Doesn't need to know <em>why</em> — just <em>what tends to happen next</em></li>
+          <li class="fragment">"When pressure drops fast, it usually rains" — no fluid dynamics required</li>
+          <li class="fragment">This is how a lot of modern machine learning works: <span style="color:#8b949e;">find the pattern, skip the explanation</span></li>
+        </ul>
+        <div class="callout green fragment"><strong>specific</strong> + <strong>honest about uncertainty</strong> + <strong>testable</strong></div>
+      </section>
+
+      <section>
+        <h2>Pattern vs. Mechanism</h2>
+        <div class="two-col">
+          <div class="callout"><strong>Pattern-based</strong><br>Powerful but blind — you know <em>that</em> it works, not <em>why</em></div>
+          <div class="callout green"><strong>Scientific method</strong><br>Tests hypotheses — slower but gives real understanding</div>
+        </div>
+        <div class="callout purple fragment" style="margin-top:.8em;"><em>"Is a forecast that works but has no explanation still science?"</em></div>
+        
+      </section>
+
+      <section>
+        <h2>Weather as the Ultimate Forecasting Lab</h2>
+        <ul>
+          <li class="fragment">Forecasts made and tested <strong>every single day</strong></li>
+          <li class="fragment">Instant feedback loop — bad models get caught immediately</li>
+        </ul>
+        <div class="callout fragment">We'll come back to weather in Section 5 →</div>
+      </section>
+    </section>
+
+    <!-- ══════════════════════════════════════
+         SECTION 3: CAN WE EVER PROVE ANYTHING?
+    ══════════════════════════════════════ -->
+    <section>
+      <section class="section-title"><h2>Section 3</h2><h2>Can We Ever Prove Anything?</h2></section>
+
+      <section>
+        <h2>What Would "Proof" Even Mean? <span class="interactive-badge">INTERACTIVE</span></h2>
+        <div class="callout purple fragment">"Can you <strong>prove</strong> the sun will rise tomorrow?"</div>
+        <div class="callout fragment" style="margin-top:.8em;">What would it actually take to be certain — not just very confident?</div>
+      </section>
+
+      <section>
+        <h2>The Black Swan Problem</h2>
+        <ul>
+          <li class="fragment">For centuries, every recorded swan was white</li>
+          <li class="fragment">Then black swans were discovered</li>
+          <li class="fragment">One observation destroyed a universal claim</li>
+        </ul>
+        <div class="callout orange fragment">No amount of confirming data proves something <strong>true forever</strong>.</div>
+      </section>
+
+      <section>
+        <h2>Popper &amp; Falsifiability</h2>
+        <ul>
+          <li class="fragment">Science doesn't prove things <strong>true</strong> — it <strong>fails to prove them false</strong></li>
+          <li class="fragment">A claim is scientific only if it <em>could</em> be proven wrong</li>
+        </ul>
+        <div class="callout green fragment"><strong>Not scientific:</strong> "Everything happens for a reason."<br><strong>Scientific:</strong> "Aspirin reduces fever." (testable, falsifiable)</div>
+      </section>
+
+      <section>
+        <h2>What Data Can Do</h2>
+        <ul><li class="fragment">Data can <strong>support</strong> or <strong>undermine</strong> a claim</li><li class="fragment">More data = more <em>confidence</em>, never absolute certainty</li></ul>
+        <div class="callout fragment">This is not a weakness — it's <strong>honesty</strong>.</div>
+      </section>
+
+      <section>
+        <h2>Uncertainty Is Not Ignorance</h2>
+        <div class="two-col">
+          <div class="callout orange fragment"><strong>"We don't know"</strong><br><em>ignorance</em></div>
+          <div class="callout green fragment"><strong>"We know the range of likely outcomes"</strong><br><em>quantified uncertainty = knowledge</em></div>
+        </div>
+        <div class="callout fragment" style="margin-top:.8em;">"70% chance of rain" is <strong>precise</strong>, <strong>honest</strong>, and <strong>useful</strong>.</div>
+      </section>
+
+      <section>
+        <h2>The Problem of Bad Data <span class="interactive-badge">INTERACTIVE</span></h2>
+        <blockquote>Garbage in, garbage out.</blockquote>
+        <ul style="margin-top:.6em;"><li class="fragment">Biased samples</li><li class="fragment">Missing data</li><li class="fragment">Measurement error</li></ul>
+        <div class="callout orange fragment"><em>What's wrong with this survey?</em><br><small>"We asked 100 students at lunch: do you eat lunch? 98% said yes."</small></div>
+      </section>
+    </section>
+
+    <!-- ══════════════════════════════════════
+         SECTION 4: HOW INTUITION FAILS US
+    ══════════════════════════════════════ -->
+    <section>
+      <section class="section-title"><h2>Section 4</h2><h2>How Intuition Fails Us</h2><h3>Four Fallacies</h3></section>
+
+      <section>
+        <h2>Our Brains Are Pattern Machines</h2>
+        <ul>
+          <li class="fragment">Evolution built us to find patterns <strong>fast</strong> — it kept us alive</li>
+          <li class="fragment">But fast pattern-finding in a data-rich world leads us badly astray</li>
+        </ul>
+        <div class="callout fragment">Four classic ways our intuition breaks down →</div>
+      </section>
+
+      <section>
+        <h2>Fallacy 1: The Group Average Fallacy</h2>
+        <ul>
+          <li class="fragment">Average male grip strength > average female grip strength</li>
+          <li class="fragment">But the distributions <strong>overlap enormously</strong></li>
+          <li class="fragment">Knowing someone's group tells you surprisingly <strong>little</strong> about that individual</li>
+        </ul>
+        <div class="overlap-chart fragment">
+          <div class="bell-row">
+            <span style="color:#58a6ff;">▓▓▓▓▓</span><span style="color:#9c73c5;">▓▓▓▓▓▓</span><span style="color:#3fb950;">▓▓▓▓▓</span>
+          </div>
+          <p style="color:#8b949e;font-size:.65em;">← Group A &nbsp;&nbsp; Overlap &nbsp;&nbsp; Group B →</p>
+          <p style="color:#d2a8ff;">The overlap is the lesson.</p>
+        </div>
+        <p class="fragment"><strong>The fix: <span class="fix-badge">always look at spread, not just the average</span></strong></p>
+      </section>
+
+      <section>
+        <h2>Fallacy 2: Survivorship Bias</h2>
+        <ul>
+          <li class="fragment">WWII planes returned with bullet holes in the wings</li>
+          <li class="fragment">Engineers wanted to reinforce the wings</li>
+          <li class="fragment">Abraham Wald said: <strong style="color:#ffa348;">reinforce the engines</strong><br><span style="color:#8b949e;font-size:.85em;">planes hit there didn't come back</span></li>
+        </ul>
+        <div class="callout orange fragment">We only see the data that <strong>survived</strong> — the missing data is often the most important.</div>
+        <p class="fragment" style="color:#8b949e;font-size:.85em;">Modern version: "all these successful entrepreneurs dropped out of college!"</p>
+        <p class="fragment"><strong>The fix: <span class="fix-badge">always ask what data you're NOT seeing</span></strong></p>
+      </section>
+
+      <section>
+        <h2>Fallacy 3: The Texas Sharpshooter</h2>
+        <ul>
+          <li class="fragment">Shoot at a barn, then <strong>draw the target around the bullet holes</strong></li>
+          <li class="fragment">If you look at enough data you will always find a pattern — even in pure noise</li>
+          <li class="fragment">This is how horoscopes, conspiracy theories, and bad science work</li>
+        </ul>
+        <p class="fragment"><strong>The fix: <span class="fix-badge">decide what you're looking for before you look</span></strong></p>
+      </section>
+
+      <!-- ── SLIDE 29: GAMBLER'S FALLACY — with coin flip game ── -->
+      <section>
+        <h2>Fallacy 4: The Gambler's Fallacy <span class="interactive-badge">INTERACTIVE</span></h2>
+        <div id="coin-game">
+          <div style="display:flex;align-items:center;gap:.8em;flex-wrap:wrap;">
+            <button class="game-btn primary" onclick="flipCoin()">🪙 Flip Coin</button>
+            <button class="game-btn" onclick="flipMany(10)">Flip 10×</button>
+            <button class="game-btn" onclick="resetCoin()" style="color:#8b949e;">Reset</button>
+          </div>
+          <div id="coin-history" style="margin-top:.6em;"></div>
+          <div id="coin-streak"></div>
+          <div id="coin-totals">Heads: 0 &nbsp;|&nbsp; Tails: 0 &nbsp;|&nbsp; Total: 0</div>
+          <div id="coin-probability"></div>
+          <div id="coin-auto-result"></div>
+        </div>
+        <p class="fragment" style="margin-top:.6em;font-size:.85em;color:#8b949e;">Weather connection: just because it hasn't rained in two weeks doesn't mean rain is "due."</p>
+        <p class="fragment"><strong>The fix: <span class="fix-badge">ask whether events are truly independent before assuming streaks mean anything</span></strong></p>
+        
+      </section>
+
+      <!-- ── MONTY HALL — its own slide ── -->
+      <section>
+        <h2>The Monty Hall Problem <span class="interactive-badge">INTERACTIVE</span></h2>
+        <div id="monty-game">
+          <div id="monty-message">Pick a door — one hides a car 🚗, two hide goats 🐐</div>
+          <div class="doors-row" id="doors-row">
+            <button class="door-btn" id="door-0" onclick="montyPick(0)">🚪<span class="door-label">Door 1</span></button>
+            <button class="door-btn" id="door-1" onclick="montyPick(1)">🚪<span class="door-label">Door 2</span></button>
+            <button class="door-btn" id="door-2" onclick="montyPick(2)">🚪<span class="door-label">Door 3</span></button>
+          </div>
+          <div id="monty-prompt"></div>
+          <div class="monty-btn-row" id="monty-actions"></div>
+          <div class="monty-stats">
+            <div class="stat-card stay-card">
+              <div class="stat-title">Stayed with original door</div>
+              <div class="stat-numbers" id="stay-stat">0 wins / 0 games (—)</div>
+            </div>
+            <div class="stat-card switch-card">
+              <div class="stat-title">Switched to other door</div>
+              <div class="stat-numbers" id="switch-stat">0 wins / 0 games (—)</div>
+            </div>
+          </div>
+          <div style="margin-top:.5em;display:flex;gap:.6em;align-items:center;flex-wrap:wrap;">
+            <button class="game-btn green-btn" onclick="montySimulate(100)">Auto-simulate 100 games</button>
+            <button class="game-btn" onclick="montySimulate(1000)">Simulate 1000</button>
+            <button class="game-btn" onclick="montyReset()" style="color:#8b949e;">Reset stats</button>
+          </div>
+          <div id="monty-insight"></div>
+        </div>
+        
+      </section>
+
+      <!-- ── SLIDE 30: CAPSTONE ── -->
+      <section>
+        <h2>The Capstone: Why Intuition Fails</h2>
+        <p>Gambler's Fallacy and Monty Hall are mirror-image errors:</p>
+        <div class="two-col" style="margin-top:.8em;">
+          <div class="callout orange fragment">
+            <strong>Gambler's Fallacy</strong><br>
+            Seeing dependence where there is <em>none</em><br>
+            <small>the coin is independent but we treat it as connected</small>
+          </div>
+          <div class="callout purple fragment">
+            <strong>Monty Hall</strong><br>
+            Seeing independence where there is <em>dependence</em><br>
+            <small>the host's reveal changes everything but we ignore it</small>
+          </div>
+        </div>
+        <div class="callout fragment" style="margin-top:.8em;">
+          Our intuition gets dependence <strong>exactly backwards</strong> — in predictable, systematic ways.<br>
+          <small style="color:#8b949e;">This is why we need data, math, and statistical thinking to check our gut.</small>
+        </div>
+      </section>
+    </section>
+
+    <!-- ══════════════════════════════════════
+         SECTION 5: METEOROLOGICAL FORECASTING
+    ══════════════════════════════════════ -->
+    <section>
+      <section class="section-title"><h2>Section 5</h2><h2>Meteorological Forecasting</h2><h3>A Case Study</h3></section>
+
+      <section>
+        <h2>Why Weather Is Perfect for This</h2>
+        <ul>
+          <li class="fragment">We can't run experiments on the atmosphere</li>
+          <li class="fragment">But we have <strong>enormous</strong> amounts of observational data</li>
+          <li class="fragment">Forecasts are tested every single day — instant feedback loop</li>
+        </ul>
+        <div class="callout fragment">Every fallacy we just covered shows up in how people misread weather.</div>
+      </section>
+
+      <section>
+        <h2>How Weather Data Is Collected</h2>
+        <ul>
+          <li class="fragment">Stations, satellites, weather balloons, ocean buoys, radar</li>
+          <li class="fragment"><strong>Millions of data points per hour</strong></li>
+          <li class="fragment">The collection method must match the speed of the atmosphere</li>
+        </ul>
+        <div class="callout green fragment">Central tendency and spread apply here too:<br>What is a "normal" temperature? How much does it vary?</div>
+      </section>
+
+      <section>
+        <h2>From Data to Forecast</h2>
+        <ul>
+          <li class="fragment">Physics equations + historical patterns + today's observations</li>
+          <li class="fragment"><strong>Ensemble modeling:</strong> run the forecast 50 times with slight variations, look at the spread</li>
+        </ul>
+        <div class="callout fragment">The <strong>spread of the ensemble</strong> <em>is</em> the uncertainty.</div>
+      </section>
+
+      <section>
+        <h2>Reading Uncertainty Like a Scientist <span class="interactive-badge">INTERACTIVE</span></h2>
+        <div class="callout purple fragment">"70% chance of rain" — what do you think it means?</div>
+        <div class="callout green fragment">Out of 100 days that looked like today, it rained on 70.</div>
+        <ul><li class="fragment">Probability is not certainty — and that's honest science</li><li class="fragment">Cone of uncertainty for hurricanes — same idea, higher stakes</li></ul>
+      </section>
+
+      <section>
+        <h2>How Forecasts Have Gotten Better</h2>
+        <div class="callout green fragment">1960s 1-day forecast accuracy ≈ today's <strong>4-day</strong> forecast accuracy</div>
+        <p style="margin-top:.8em;" class="fragment">What improved:</p>
+        <ul><li class="fragment">More data (satellites, sensors)</li><li class="fragment">Better physical models</li><li class="fragment">More computing power</li></ul>
+        <div class="fragment" style="margin-top:.8em;">
+          <div class="accuracy-row"><span class="accuracy-label">1960s 1-day</span><span class="accuracy-bar" style="width:100px;background:#58a6ff;"></span></div>
+          <div class="accuracy-row"><span class="accuracy-label">1990s 3-day</span><span class="accuracy-bar" style="width:200px;background:#3fb950;"></span></div>
+          <div class="accuracy-row"><span class="accuracy-label">Today 5-day</span><span class="accuracy-bar" style="width:320px;background:#d2a8ff;"></span></div>
+        </div>
+      </section>
+
+      <section>
+        <h2>What Forecasts Still Can't Do</h2>
+        <ul>
+          <li class="fragment"><strong>Chaos theory</strong> — small differences compound over time</li>
+          <li class="fragment">10-day forecasts are still fuzzy; 30-day nearly impossible</li>
+        </ul>
+        <div class="callout orange fragment">This isn't failure — it's the <strong>honest limit</strong> of the data.</div>
+        
+      </section>
+    </section>
+
+    <!-- ══════════════════════════════════════
+         SLIDE 37 — BRINGING IT ALL TOGETHER
+    ══════════════════════════════════════ -->
+    <section>
+      <h2>Bringing It All Together</h2>
+      <ul>
+        <li class="fragment">Data <strong>describes, compares, finds trends, and predicts</strong></li>
+        <li class="fragment">Central tendency + spread are the foundation of every summary</li>
+        <li class="fragment">Data never <em>proves</em> — it builds confidence</li>
+        <li class="fragment">Pattern-based forecasting and mechanism-based science work best together</li>
+        <li class="fragment">Our intuition fails in predictable ways — data is how we correct it</li>
+        <li class="fragment">The best scientists are comfortable saying <em>"probably"</em> and <em>"we're not sure yet"</em></li>
+        <li class="fragment">Weather forecasting is data science working in public, tested every single day</li>
+      </ul>
+    </section>
+
+
+  </div><!-- /slides -->
+</div><!-- /reveal -->
+
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/notes/notes.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/highlight.js"></script>
+
+<script>
+/* ═══════════════════════════════════════════════
+   REVEAL.JS INIT
+═══════════════════════════════════════════════ */
+Reveal.initialize({
+  hash: true,
+  history: true,
+  center: false,
+  slideNumber: 'c/t',
+  transition: 'slide',
+  transitionSpeed: 'fast',
+  fragments: true,
+  navigationMode: 'linear',  // right/left arrow goes slide-by-slide through all slides
+  plugins: [ RevealNotes, RevealHighlight ]
+});
+
+/* ═══════════════════════════════════════════════
+   UTILITY: BOX-MULLER NORMAL SAMPLE
+═══════════════════════════════════════════════ */
+function randn() {
+  let u = 0, v = 0;
+  while (u === 0) u = Math.random();
+  while (v === 0) v = Math.random();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+
+function normalSamples(mean, sigma, n) {
+  return Array.from({length: n}, () => mean + sigma * randn());
+}
+
+/* ═══════════════════════════════════════════════
+   SPREAD SLIDER + PLOTLY CHART
+═══════════════════════════════════════════════ */
+let spreadInitialized = false;
+
+function buildSpreadChart(sigma, mean, slope) {
+  const n = 80;
+  const mid = (n + 1) / 2; // x midpoint for centering slope
+  const xs = Array.from({length: n}, (_, i) => i + 1);
+  // y = mean + slope*(x - mid) + noise
+  const ys = xs.map(x => mean + slope * (x - mid) + sigma * randn());
+
+  const actualMean = ys.reduce((a, b) => a + b, 0) / n;
+  const actualSd = Math.sqrt(ys.map(y => (y - actualMean) ** 2).reduce((a, b) => a + b, 0) / n);
+
+  document.getElementById('stat-mean').textContent = actualMean.toFixed(1) + '°F';
+  document.getElementById('stat-sd').textContent   = actualSd.toFixed(1) + '°F';
+  document.getElementById('stat-min').textContent  = Math.min(...ys).toFixed(1) + '°F';
+  document.getElementById('stat-max').textContent  = Math.max(...ys).toFixed(1) + '°F';
+
+  // Trend line: from (1, mean + slope*(1-mid)) to (n, mean + slope*(n-mid))
+  const trendY0 = mean + slope * (1 - mid);
+  const trendY1 = mean + slope * (n - mid);
+  const trendLine = {
+    x: [1, n], y: [trendY0, trendY1],
+    mode: 'lines', name: slope === 0 ? 'Mean' : 'Trend',
+    line: { color: '#ffa348', width: 2, dash: 'dash' }
+  };
+
+  const scatter = {
+    x: xs, y: ys,
+    mode: 'markers', name: 'Daily temp',
+    marker: { color: '#58a6ff', size: 6, opacity: 0.75 },
+    hovertemplate: 'Day %{x}: %{y:.1f}°F<extra></extra>'
+  };
+
+  const layout = {
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor:  'rgba(0,0,0,0)',
+    font: { color: '#e6edf3', family: 'inherit', size: 12 },
+    margin: { t: 10, r: 10, b: 40, l: 50 },
+    xaxis: {
+      title: 'Day of year',
+      gridcolor: '#21262d', zeroline: false,
+      tickfont: { color: '#8b949e' }, titlefont: { color: '#8b949e' }
+    },
+    yaxis: {
+      title: 'Temperature (°F)',
+      range: [-20, 140],    // fixed — prevents rescaling when sliders move
+      autorange: false,
+      gridcolor: '#21262d', zeroline: false,
+      tickfont: { color: '#8b949e' }, titlefont: { color: '#8b949e' }
+    },
+    showlegend: true,
+    legend: { x: 1, xanchor: 'right', y: 1, bgcolor: 'rgba(0,0,0,0)', font: { size: 11 } }
+  };
+
+  const config = { displayModeBar: false, responsive: true };
+
+  if (!spreadInitialized) {
+    Plotly.newPlot('spread-chart', [scatter, trendLine], layout, config);
+    spreadInitialized = true;
+  } else {
+    Plotly.react('spread-chart', [scatter, trendLine], layout, config);
+  }
+}
+
+function getSpreadParams() {
+  return {
+    sigma: parseInt(document.getElementById('spread-slider').value, 10),
+    mean:  parseInt(document.getElementById('mean-slider').value, 10),
+    slope: parseInt(document.getElementById('trend-slider').value, 10) / 16 // ±0.5°F/day max, ~±20°F across 80 days
+  };
+}
+
+function initSpread() {
+  const spreadSlider = document.getElementById('spread-slider');
+  const meanSlider   = document.getElementById('mean-slider');
+  const trendSlider  = document.getElementById('trend-slider');
+
+  const { sigma, mean, slope } = getSpreadParams();
+  buildSpreadChart(sigma, mean, slope);
+
+  spreadSlider.addEventListener('input', () => {
+    document.getElementById('spread-label').textContent = `σ = ${spreadSlider.value}°F`;
+    const p = getSpreadParams();
+    buildSpreadChart(p.sigma, p.mean, p.slope);
+  });
+  meanSlider.addEventListener('input', () => {
+    document.getElementById('mean-label').textContent = `μ = ${meanSlider.value}°F`;
+    const p = getSpreadParams();
+    buildSpreadChart(p.sigma, p.mean, p.slope);
+  });
+  trendSlider.addEventListener('input', () => {
+    const v = parseInt(trendSlider.value, 10);
+    const sign = v > 0 ? '+' : '';
+    document.getElementById('trend-label').textContent = `slope ${sign}${v}`;
+    const p = getSpreadParams();
+    buildSpreadChart(p.sigma, p.mean, p.slope);
+  });
+}
+
+// Initialize spread chart when its slide becomes visible
+Reveal.on('slidechanged', event => {
+  if (document.getElementById('spread-chart') &&
+      event.currentSlide.contains(document.getElementById('spread-chart'))) {
+    if (!spreadInitialized) initSpread();
+  }
+});
+// Also handle initial load if that slide is shown first
+Reveal.on('ready', () => {
+  if (document.getElementById('spread-chart') &&
+      Reveal.getCurrentSlide().contains(document.getElementById('spread-chart'))) {
+    initSpread();
+  }
+});
+
+/* ═══════════════════════════════════════════════
+   COIN FLIP GAME
+═══════════════════════════════════════════════ */
+const coinState = { flips: [], heads: 0, tails: 0 };
+const MAX_DISPLAY = 20;
+
+function flipCoin() {
+  const result = Math.random() < 0.5 ? 'H' : 'T';
+  coinState.flips.push(result);
+  if (result === 'H') coinState.heads++; else coinState.tails++;
+  renderCoin();
+}
+
+function flipMany(n) {
+  for (let i = 0; i < n; i++) {
+    const r = Math.random() < 0.5 ? 'H' : 'T';
+    coinState.flips.push(r);
+    if (r === 'H') coinState.heads++; else coinState.tails++;
+  }
+  renderCoin();
+}
+
+function resetCoin() {
+  coinState.flips = []; coinState.heads = 0; coinState.tails = 0;
+  document.getElementById('coin-history').innerHTML = '';
+  document.getElementById('coin-streak').textContent = '';
+  document.getElementById('coin-totals').textContent = 'Heads: 0 | Tails: 0 | Total: 0';
+  document.getElementById('coin-probability').textContent = '';
+  document.getElementById('coin-auto-result').textContent = '';
+}
+
+function getStreak(flips) {
+  if (!flips.length) return { char: '', count: 0 };
+  const last = flips[flips.length - 1];
+  let count = 0;
+  for (let i = flips.length - 1; i >= 0; i--) {
+    if (flips[i] === last) count++; else break;
+  }
+  return { char: last, count };
+}
+
+function renderCoin() {
+  const hist = document.getElementById('coin-history');
+  const recent = coinState.flips.slice(-MAX_DISPLAY);
+  hist.innerHTML = recent.map(r =>
+    `<div class="coin-chip ${r}">${r}</div>`
+  ).join('');
+
+  const total = coinState.flips.length;
+  const { char, count } = getStreak(coinState.flips);
+  const streakEl = document.getElementById('coin-streak');
+  const probEl   = document.getElementById('coin-probability');
+
+  if (count >= 3) {
+    const word = char === 'H' ? 'Heads' : 'Tails';
+    streakEl.textContent = `🔥 ${count} ${word} in a row! Feels like ${char === 'H' ? 'Tails' : 'Heads'} is "due"...`;
+    probEl.textContent   = `→ But the next flip is still exactly 50% Heads / 50% Tails. The coin has no memory.`;
+  } else {
+    streakEl.textContent = '';
+    probEl.textContent   = total > 0
+      ? `Running: ${((coinState.heads / total) * 100).toFixed(1)}% Heads`
+      : '';
+  }
+
+  document.getElementById('coin-totals').textContent =
+    `Heads: ${coinState.heads} | Tails: ${coinState.tails} | Total: ${total}`;
+}
+
+/* ═══════════════════════════════════════════════
+   MONTY HALL GAME
+═══════════════════════════════════════════════ */
+const monty = {
+  phase: 'pick',     // 'pick' | 'decide' | 'result'
+  carDoor: null,
+  playerDoor: null,
+  revealedDoor: null,
+  stayWins: 0, stayTotal: 0,
+  switchWins: 0, switchTotal: 0
+};
+
+function montyReset() {
+  monty.stayWins = 0; monty.stayTotal = 0;
+  monty.switchWins = 0; monty.switchTotal = 0;
+  montyNewGame();
+  updateMontyStats();
+  document.getElementById('monty-insight').textContent = '';
+}
+
+function montyNewGame() {
+  monty.phase = 'pick';
+  monty.carDoor = Math.floor(Math.random() * 3);
+  monty.playerDoor = null;
+  monty.revealedDoor = null;
+
+  for (let i = 0; i < 3; i++) {
+    const btn = document.getElementById(`door-${i}`);
+    btn.className = 'door-btn';
+    btn.textContent = '🚪';
+    btn.disabled = false;
+    btn.innerHTML = `🚪<span class="door-label">Door ${i+1}</span>`;
+  }
+  document.getElementById('monty-message').textContent =
+    'Pick a door — one hides a car 🚗, two hide goats 🐐';
+  document.getElementById('monty-prompt').textContent = '';
+  document.getElementById('monty-actions').innerHTML = '';
+}
+
+function montyPick(door) {
+  if (monty.phase !== 'pick') return;
+  monty.phase = 'decide';
+  monty.playerDoor = door;
+
+  // Host reveals a goat (not the player's door, not the car)
+  const goatDoors = [0,1,2].filter(d => d !== door && d !== monty.carDoor);
+  monty.revealedDoor = goatDoors[Math.floor(Math.random() * goatDoors.length)];
+
+  // Update door display
+  const picked = document.getElementById(`door-${door}`);
+  picked.className = 'door-btn selected';
+  picked.disabled = true;
+
+  const revealed = document.getElementById(`door-${monty.revealedDoor}`);
+  revealed.className = 'door-btn revealed';
+  revealed.innerHTML = `🐐<span class="door-label">Door ${monty.revealedDoor+1}</span>`;
+  revealed.disabled = true;
+
+  const otherDoor = [0,1,2].find(d => d !== door && d !== monty.revealedDoor);
+  document.getElementById(`door-${otherDoor}`).disabled = true;
+
+  document.getElementById('monty-message').textContent =
+    `You picked Door ${door+1}. The host reveals Door ${monty.revealedDoor+1}: it's a goat!`;
+  document.getElementById('monty-prompt').textContent =
+    `Do you want to stay with Door ${door+1} or switch to Door ${otherDoor+1}?`;
+
+  const actions = document.getElementById('monty-actions');
+  actions.innerHTML = `
+    <button class="game-btn orange-btn" onclick="montyDecide('stay')">Stay with Door ${door+1}</button>
+    <button class="game-btn green-btn" onclick="montyDecide('switch')">Switch to Door ${otherDoor+1}</button>
+  `;
+}
+
+function montyDecide(choice) {
+  if (monty.phase !== 'decide') return;
+  monty.phase = 'result';
+
+  const otherDoor = [0,1,2].find(d => d !== monty.playerDoor && d !== monty.revealedDoor);
+  const finalDoor = choice === 'stay' ? monty.playerDoor : otherDoor;
+  const won = finalDoor === monty.carDoor;
+
+  // Update stats
+  if (choice === 'stay') {
+    monty.stayTotal++;
+    if (won) monty.stayWins++;
+  } else {
+    monty.switchTotal++;
+    if (won) monty.switchWins++;
+  }
+
+  // Show all doors
+  for (let i = 0; i < 3; i++) {
+    const btn = document.getElementById(`door-${i}`);
+    if (i === monty.revealedDoor) continue; // already shown as goat
+    const isCar = i === monty.carDoor;
+    btn.innerHTML = `${isCar ? '🚗' : '🐐'}<span class="door-label">Door ${i+1}</span>`;
+    if (i === finalDoor) {
+      btn.className = `door-btn ${won ? 'winner' : 'loser'}`;
+    }
+  }
+
+  const msg = won
+    ? `🎉 You ${choice === 'stay' ? 'stayed' : 'switched'} and WON the car! 🚗`
+    : `😬 You ${choice === 'stay' ? 'stayed' : 'switched'} and got the goat... 🐐`;
+  document.getElementById('monty-message').textContent = msg;
+  document.getElementById('monty-prompt').textContent = '';
+
+  document.getElementById('monty-actions').innerHTML =
+    `<button class="game-btn primary" onclick="montyNewGame()">Play again</button>`;
+
+  updateMontyStats();
+}
+
+function updateMontyStats() {
+  const stayPct   = monty.stayTotal   ? ((monty.stayWins   / monty.stayTotal)   * 100).toFixed(0) + '%' : '—';
+  const switchPct = monty.switchTotal ? ((monty.switchWins  / monty.switchTotal) * 100).toFixed(0) + '%' : '—';
+  document.getElementById('stay-stat').textContent   =
+    `${monty.stayWins} wins / ${monty.stayTotal} games (${stayPct})`;
+  document.getElementById('switch-stat').textContent =
+    `${monty.switchWins} wins / ${monty.switchTotal} games (${switchPct})`;
+
+  const total = monty.stayTotal + monty.switchTotal;
+  const insight = document.getElementById('monty-insight');
+  if (total >= 20) {
+    insight.textContent =
+      `After ${total} games: switching wins ≈ ${switchPct}, staying wins ≈ ${stayPct}. Theory predicts 67% vs 33%.`;
+  } else if (total > 0) {
+    insight.textContent = `Keep playing — the pattern becomes clear after ~20 games.`;
+  }
+}
+
+function montySimulate(n) {
+  for (let g = 0; g < n; g++) {
+    const car = Math.floor(Math.random() * 3);
+    const pick = Math.floor(Math.random() * 3);
+    // host reveals a goat
+    const goatDoors = [0,1,2].filter(d => d !== pick && d !== car);
+    const revealed = goatDoors[Math.floor(Math.random() * goatDoors.length)];
+    // half stay, half switch
+    if (g % 2 === 0) {
+      monty.stayTotal++;
+      if (pick === car) monty.stayWins++;
+    } else {
+      const other = [0,1,2].find(d => d !== pick && d !== revealed);
+      monty.switchTotal++;
+      if (other === car) monty.switchWins++;
+    }
+  }
+  updateMontyStats();
+  document.getElementById('monty-insight').textContent =
+    `Simulated ${monty.stayTotal + monty.switchTotal} total games — does the 67%/33% pattern appear?`;
+}
+
+// Initialize Monty Hall on load
+window.addEventListener('load', () => {
+  montyNewGame();
+});
+</script>
+</body>
+</html>
