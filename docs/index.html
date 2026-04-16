@@ -443,25 +443,27 @@
       <section>
         <h2>What Does a Dataset Actually Tell Us?</h2>
         <p>When you collect data you get a pile of numbers — how do you summarize it?</p>
-        <div class="two-col" style="margin-top:.8em;">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.2em;margin-top:.8em;">
           <div class="callout fragment"><strong>Where is the middle?</strong><br><em>central tendency</em></div>
           <div class="callout green fragment"><strong>How spread out is it?</strong><br><em>variability</em></div>
+          <div class="callout purple fragment"><strong>Is it going up or down?</strong><br><em>trend</em></div>
         </div>
       </section>
 
       <section>
         <h2>Central Tendency: Finding the Middle</h2>
-        <ul>
-          <li class="fragment"><strong>Mean, median, mode</strong> — three ways to describe "typical"</li>
-          <li class="fragment">They don't always agree — and that <em>disagreement is informative</em></li>
-        </ul>
-        <div class="callout orange fragment">A billionaire walks into a room of average earners.<br><strong>Average income spikes dramatically.</strong> Median barely moves.</div>
-        <p class="fragment" style="color:#9a2515;">The choice of measure matters.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.8em;margin-bottom:.5em;">
+          <div class="callout fragment" style="padding:.5em .8em;"><strong>Mean</strong><br><span style="font-size:.78em;">Add all values, divide by count.<br>Pulled by extreme values.</span></div>
+          <div class="callout fragment" style="padding:.5em .8em;"><strong>Median</strong><br><span style="font-size:.78em;">The middle value when sorted.<br>Ignores extremes.</span></div>
+          <div class="callout fragment" style="padding:.5em .8em;"><strong>Mode</strong><br><span style="font-size:.78em;">The most common value.<br>Useful for categories.</span></div>
+        </div>
+        <div class="callout orange fragment" style="padding:.5em .8em;font-size:.88em;">A billionaire walks into a room of average earners.<br><strong>Mean income spikes dramatically.</strong> Median barely moves.</div>
+        <p class="fragment" style="color:#9a2515;margin-top:.4em;font-size:.88em;">They don't always agree — and that <em>disagreement is informative</em>. The choice of measure matters.</p>
       </section>
 
       <!-- ── SLIDE 10: SPREAD — with Plotly interactive ── -->
       <section>
-        <h2>Spread: How Much Does It Vary? <span class="interactive-badge">INTERACTIVE</span></h2>
+        <h2>Central Tendency &amp; Spread <span class="interactive-badge">INTERACTIVE</span></h2>
         <div id="spread-container">
           <div id="spread-chart"></div>
           <div id="spread-controls" style="flex-direction:column;gap:.4em;">
@@ -473,7 +475,7 @@
               <span id="spread-label" style="width:80px;text-align:right;">σ = 5°F</span>
             </div>
             <div style="display:flex;align-items:center;gap:.6em;">
-              <span style="width:130px;color:#9a2515;font-size:.85em;">🎯 Mean (center)</span>
+              <span style="width:130px;color:#9a2515;font-size:.85em;">🎯 Central Tendency</span>
               <span style="color:#6b7280;font-size:.75em;white-space:nowrap;">Cold</span>
               <input type="range" id="mean-slider" min="40" max="90" value="65" step="1" style="background:linear-gradient(90deg,#bfdbfe,#fbbf24,#dc2626);">
               <span style="color:#6b7280;font-size:.75em;white-space:nowrap;">Hot</span>
@@ -829,13 +831,21 @@ function buildSpreadChart(sigma, mean, slope) {
   document.getElementById('stat-min').textContent  = Math.min(...ys).toFixed(1) + '°F';
   document.getElementById('stat-max').textContent  = Math.max(...ys).toFixed(1) + '°F';
 
+  // Horizontal mean line at actual computed mean
+  const meanLine = {
+    x: [1, n], y: [actualMean, actualMean],
+    mode: 'lines', name: 'Mean',
+    line: { color: '#9a2515', width: 2 }
+  };
+
   // Trend line: from (1, mean + slope*(1-mid)) to (n, mean + slope*(n-mid))
   const trendY0 = mean + slope * (1 - mid);
   const trendY1 = mean + slope * (n - mid);
   const trendLine = {
     x: [1, n], y: [trendY0, trendY1],
-    mode: 'lines', name: slope === 0 ? 'Mean' : 'Trend',
-    line: { color: '#9a2515', width: 2, dash: 'dash' }
+    mode: 'lines', name: 'Trend',
+    line: { color: '#7c3aed', width: 2, dash: 'dash' },
+    visible: slope !== 0
   };
 
   const scatter = {
@@ -869,10 +879,10 @@ function buildSpreadChart(sigma, mean, slope) {
   const config = { displayModeBar: false, responsive: true };
 
   if (!spreadInitialized) {
-    Plotly.newPlot('spread-chart', [scatter, trendLine], layout, config);
+    Plotly.newPlot('spread-chart', [scatter, meanLine, trendLine], layout, config);
     spreadInitialized = true;
   } else {
-    Plotly.react('spread-chart', [scatter, trendLine], layout, config);
+    Plotly.react('spread-chart', [scatter, meanLine, trendLine], layout, config);
   }
 }
 
